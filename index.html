@@ -236,13 +236,29 @@
       font-weight: 700;
     }
 
-    .score-pill {
+    .meta-right {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .score-pill,
+    .streak-pill {
       padding: 7px 11px;
       border: 1px solid var(--card-border);
       border-radius: 999px;
-      color: var(--yellow);
       background: var(--soft);
       white-space: nowrap;
+    }
+
+    .score-pill {
+      color: var(--yellow);
+    }
+
+    .streak-pill {
+      color: var(--mint);
     }
 
     .progress-track {
@@ -443,7 +459,10 @@
     <section class="quiz-card" aria-label="Space exploration quiz">
       <div class="quiz-meta">
         <span id="question-count">Question 1 of 10</span>
-        <span class="score-pill" id="score" aria-live="polite">⭐ Score: 0</span>
+        <div class="meta-right">
+          <span class="score-pill" id="score" aria-live="polite">⭐ Score: 0</span>
+          <span class="streak-pill" id="streak" aria-live="polite">🔥 Streak: 0</span>
+        </div>
       </div>
       <div class="progress-track" role="progressbar" id="progress" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0">
         <div class="progress-fill" id="progress-fill"></div>
@@ -520,6 +539,7 @@
     const content = document.querySelector("#quiz-content");
     const countLabel = document.querySelector("#question-count");
     const scoreLabel = document.querySelector("#score");
+    const streakLabel = document.querySelector("#streak");
     const progress = document.querySelector("#progress");
     const progressFill = document.querySelector("#progress-fill");
     const themeToggle = document.querySelector("#theme-toggle");
@@ -528,12 +548,19 @@
     let questionIndex = 0;
     let score = 0;
     let answered = false;
+    let currentStreak = 0;
+    let longestStreak = 0;
+
+    function renderStreak() {
+      streakLabel.textContent = `🔥 Streak: ${currentStreak}`;
+    }
 
     function renderQuestion() {
       answered = false;
       const item = questions[questionIndex];
       countLabel.textContent = `Question ${questionIndex + 1} of ${questions.length}`;
       scoreLabel.textContent = `⭐ Score: ${score}`;
+      renderStreak();
       progress.setAttribute("aria-valuenow", questionIndex);
       progressFill.style.width = `${(questionIndex / questions.length) * 100}%`;
       content.innerHTML = `
@@ -569,16 +596,21 @@
         if (index === item.correct) button.classList.add("correct");
       });
       if (isCorrect) {
+        currentStreak += 1;
+        longestStreak = Math.max(longestStreak, currentStreak);
         score++;
         buttons[selectedIndex].setAttribute("aria-label", `${item.answers[selectedIndex]}, correct`);
         feedback.textContent = `Brilliant! ${item.fact}`;
         feedback.className = "feedback good";
+        renderStreak();
         sprinkle();
       } else {
+        currentStreak = 0;
         buttons[selectedIndex].classList.add("incorrect");
         buttons[selectedIndex].setAttribute("aria-label", `${item.answers[selectedIndex]}, not quite`);
         feedback.textContent = `Not quite! The answer is ${item.answers[item.correct]}. ${item.fact}`;
         feedback.className = "feedback try-again";
+        renderStreak();
       }
       scoreLabel.textContent = `⭐ Score: ${score}`;
       document.querySelector("#next-button").disabled = false;
@@ -598,6 +630,7 @@
       progressFill.style.width = "100%";
       countLabel.textContent = "Mission complete!";
       scoreLabel.textContent = `⭐ Score: ${score}`;
+      streakLabel.textContent = `🏆 Longest streak: ${longestStreak}`;
       const [emoji, headline, message] = score >= 9
         ? ["🏆", "Out of this world!", "You’re a true cosmic whiz. The universe has nothing to hide from you!"]
         : score >= 6
@@ -609,7 +642,7 @@
         <div class="result">
           <span class="result-emoji" aria-hidden="true">${emoji}</span>
           <h2>${headline}</h2>
-          <p>You scored <strong>${score} out of ${questions.length}</strong>. ${message}</p>
+          <p>You scored <strong>${score} out of ${questions.length}</strong> and reached a longest streak of <strong>${longestStreak}</strong>. ${message}</p>
           <button class="primary" id="restart-button" type="button">Play again 🚀</button>
         </div>
       `;
@@ -620,6 +653,8 @@
     function restart() {
       questionIndex = 0;
       score = 0;
+      currentStreak = 0;
+      longestStreak = 0;
       renderQuestion();
     }
 
