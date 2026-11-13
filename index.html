@@ -525,9 +525,27 @@
     const themeToggle = document.querySelector("#theme-toggle");
     const themeIcon = document.querySelector("#theme-icon");
     const themeLabel = document.querySelector("#theme-label");
+    const themeStorageKey = "space-quiz-theme";
     let questionIndex = 0;
     let score = 0;
     let answered = false;
+
+    function setTheme(theme) {
+      document.documentElement.dataset.theme = theme;
+      themeIcon.textContent = theme === "light" ? "🌙" : "☀️";
+      themeLabel.textContent = theme === "light" ? "Dark mode" : "Light mode";
+      themeToggle.setAttribute("aria-label", `Switch to ${theme === "light" ? "dark" : "light"} theme`);
+    }
+
+    function getSavedTheme() {
+      try {
+        const savedTheme = window.localStorage.getItem(themeStorageKey);
+        return savedTheme === "light" || savedTheme === "dark" ? savedTheme : "dark";
+      } catch (error) {
+        console.warn("Unable to read saved theme preference.", error);
+        return "dark";
+      }
+    }
 
     function renderQuestion() {
       answered = false;
@@ -639,12 +657,16 @@
 
     themeToggle.addEventListener("click", () => {
       const isLight = document.documentElement.dataset.theme !== "light";
-      document.documentElement.dataset.theme = isLight ? "light" : "dark";
-      themeIcon.textContent = isLight ? "🌙" : "☀️";
-      themeLabel.textContent = isLight ? "Dark mode" : "Light mode";
-      themeToggle.setAttribute("aria-label", `Switch to ${isLight ? "dark" : "light"} theme`);
+      const theme = isLight ? "light" : "dark";
+      setTheme(theme);
+      try {
+        window.localStorage.setItem(themeStorageKey, theme);
+      } catch (error) {
+        console.warn("Unable to save theme preference.", error);
+      }
     });
 
+    setTheme(getSavedTheme());
     renderQuestion();
   </script>
 </body>
